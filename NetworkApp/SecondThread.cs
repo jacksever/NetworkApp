@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
@@ -12,6 +14,8 @@ namespace NetworkApp
 		private PostToFirstWT _post;
 		private Encoding _encoding;
 
+		private static List<bool> bitArray = new List<bool>();
+
 		public SecondThread(ref Semaphore sendSemaphore, ref Semaphore receiveSemaphore, Encoding encoding)
 		{
 			_sendSemaphore = sendSemaphore;
@@ -21,40 +25,63 @@ namespace NetworkApp
 
 		public void SecondThreadMain(object obj)
 		{
-			string text = null;
 			_post = (PostToFirstWT)obj;
 
 			ConsoleHelper.WriteToConsole("2 поток", "Начинаю работу. Жду передачи данных.");
 			_receiveSemaphore.WaitOne();
+			SetData();
 
-			if (_receivedMessage.Length > 0)
+		}
+
+		private void SetData()
+		{
+			Receipt receipt;
+			Frame item = (Frame)Utils.DeserializeObject(Utils.BitArrayToByteArray(_receivedMessage));
+
+			ConsoleHelper.WriteToConsole("2 поток", $"Получены данные #{item.Id}");
+
+			var length = Utils.BitArrayToByteArray(item.Body);
+			if (BitConverter.ToInt32(length, 0) != 400)
 			{
-				text = _encoding.GetString(BitArrayToByteArray(_receivedMessage));
-				ConsoleHelper.WriteToConsole("2 поток", "Полученные данные: " + text);
+				var checkSum = 0;
 
-				_post(true);
-				_sendSemaphore.Release();
-				ConsoleHelper.WriteToConsole("2 поток", "Заканчиваю работу");
+				for (int i = 0; i < item.UsefulData; i++)
+				{
+					if (i % 5 == 0)
+						checkSum += item.Body[i] == false ? 0 : 1;
+				}
+
+				if (checkSum == item.CheckSum)
+				{
+					for (int i = 0; i < item.UsefulData; i++)
+						bitArray.Add(item.Body[i]);
+
+					receipt = new Receipt(item.Id, new BitArray(BitConverter.GetBytes(200)));
+				}
+				else
+				{
+					ConsoleHelper.WriteToConsole("2 поток", "Ошибка. Завершаю работу");
+					receipt = new Receipt(item.Id, new BitArray(BitConverter.GetBytes(400)));
+				}
+
 			}
 			else
 			{
-				ConsoleHelper.WriteToConsole("2 поток", "Сообщение пустое..");
-				_post(false);
-				_sendSemaphore.Release();
-				ConsoleHelper.WriteToConsole("2 поток", "Заканчиваю работу");
+				ConsoleHelper.WriteToConsole("2 поток", $"Полученные данные:  {_encoding.GetString(Utils.BitArrayToByteArray(new BitArray(bitArray.ToArray())))}");
+				ConsoleHelper.WriteToConsole("2 поток", "Завершаю работу");
+
+				receipt = new Receipt(item.Id, new BitArray(BitConverter.GetBytes(400)));
 			}
+
+			_post(new BitArray(Utils.SerializeObject(receipt)));
+			_sendSemaphore.Release();
+			_receiveSemaphore.WaitOne();
+			SetData();
 		}
 
 		public void ReceiveData(BitArray array)
 		{
 			_receivedMessage = array;
-		}
-
-		public byte[] BitArrayToByteArray(BitArray data)
-		{
-			byte[] array = new byte[(data.Length - 1) / 8 + 1];
-			data.CopyTo(array, 0);
-			return array;
 		}
 	}
 }
