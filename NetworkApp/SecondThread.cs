@@ -38,7 +38,7 @@ namespace NetworkApp
 			Receipt receipt;
 			Frame item = (Frame)Utils.DeserializeObject(Utils.BitArrayToByteArray(_receivedMessage));
 
-			ConsoleHelper.WriteToConsole("2 поток", $"Получены данные #{item.Id}");
+			ConsoleHelper.WriteToConsole("2 поток", $"Получен кадр #{item.Id}");
 
 			var length = Utils.BitArrayToByteArray(item.Body);
 			if (BitConverter.ToInt32(length, 0) != 400)

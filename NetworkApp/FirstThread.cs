@@ -51,7 +51,7 @@ namespace NetworkApp
 			_post(new BitArray(Utils.SerializeObject(frame)));
 			_sendSemaphore.Release();
 
-			ConsoleHelper.WriteToConsole("1 поток", $"Переданы данные {i} потока");
+			ConsoleHelper.WriteToConsole("1 поток", $"Передан {i} кадр");
 			ConsoleHelper.WriteToConsole("1 поток", "Жду результата");
 			i += 1;
 			_receiveSemaphore.WaitOne();
@@ -98,7 +98,7 @@ namespace NetworkApp
 				_post(new BitArray(Utils.SerializeObject(frame)));
 				_sendSemaphore.Release();
 
-				ConsoleHelper.WriteToConsole("1 поток", $"Переданы данные {i} потока");
+				ConsoleHelper.WriteToConsole("1 поток", $"Передан {i} кадр");
 				ConsoleHelper.WriteToConsole("1 поток", "Жду результата");
 				i = i + 1;
 				_receiveSemaphore.WaitOne();
