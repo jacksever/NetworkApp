@@ -43,13 +43,11 @@ namespace NetworkApp
 			var length = Utils.BitArrayToByteArray(item.Body);
 			if (BitConverter.ToInt32(length, 0) != 400)
 			{
-				var checkSum = 0;
+				bool[] values = new bool[item.Body.Length];
+				for (int m = 0; m < item.Body.Length; m++)
+					values[m] = item.Body[m];
 
-				for (int i = 0; i < item.UsefulData; i++)
-				{
-					if (i % 5 == 0)
-						checkSum += item.Body[i] == false ? 0 : 1;
-				}
+				var checkSum = Utils.CheckSum(values);
 
 				if (checkSum == item.CheckSum)
 				{

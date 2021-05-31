@@ -39,5 +39,15 @@ namespace NetworkApp
 				return ms.ToArray();
 			}
 		}
+
+		public static int CheckSum(bool[] array)
+        {
+			int checkSum = 0;
+			for (int fr = 0; fr < array.Length; fr++)
+				if (fr % 5 == 0)
+					checkSum += array[fr] == false ? 0 : 1;
+
+			return checkSum;
+		}
 	}
 }

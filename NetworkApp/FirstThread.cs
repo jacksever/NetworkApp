@@ -43,9 +43,9 @@ namespace NetworkApp
 
 			Frame frame;
 			if (result[i].Length == Utils.FrameLength)
-				frame = new Frame(i, new BitArray(result[i]), GetCheckSum(), result[i].Length);
+				frame = new Frame(i, new BitArray(result[i]), Utils.CheckSum(result[i]), result[i].Length);
 			else
-				frame = new Frame(i, AddedData(), GetCheckSum(), result[i].Length);
+				frame = new Frame(i, AddedData(), Utils.CheckSum(result[i]), result[i].Length);
 
 
 			_post(new BitArray(Utils.SerializeObject(frame)));
@@ -80,16 +80,15 @@ namespace NetworkApp
 				if (result.Length > i)
 				{
 					if (result[i].Length == Utils.FrameLength)
-						frame = new Frame(i, new BitArray(result[i]), GetCheckSum(), result[i].Length);
+						frame = new Frame(i, new BitArray(result[i]), Utils.CheckSum(result[i]), result[i].Length);
 					else
 					{
 						var array = AddedData();
-						var checkSum = 0;
-						for (int fr = 0; fr < Utils.FrameLength; fr++)
-							if (fr % 5 == 0)
-								checkSum += array.Get(fr) == false ? 0 : 1;
+						bool[] values = new bool[array.Length];
+						for (int m = 0; m < array.Length; m++)
+							values[m] = array[m];
 
-						frame = new Frame(i, array, checkSum, result[i].Length);
+						frame = new Frame(i, array, Utils.CheckSum(values), result[i].Length);
 					}
 				}
 				else
@@ -120,16 +119,6 @@ namespace NetworkApp
 			}
 
 			return bitArray;
-		}
-
-		private int GetCheckSum()
-		{
-			int checkSum = 0;
-			for (int fr = 0; fr < result[i].Length; fr++)
-				if (fr % 5 == 0)
-					checkSum += result[i][fr] == false ? 0 : 1;
-
-			return checkSum;
 		}
 	}
 }
