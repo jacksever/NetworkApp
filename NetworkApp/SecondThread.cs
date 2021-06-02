@@ -6,7 +6,7 @@ using System.Threading;
 
 namespace NetworkApp
 {
-	public class SecondThread
+	public class SecondThread : IWithData
 	{
 		private Semaphore _sendSemaphore;
 		private Semaphore _receiveSemaphore;
@@ -27,59 +27,79 @@ namespace NetworkApp
 		{
 			_post = (PostToFirstWT)obj;
 
-			ConsoleHelper.WriteToConsole("2 поток", "Начинаю работу. Жду передачи данных.");
-			_receiveSemaphore.WaitOne();
+			ConsoleHelper.WriteToConsole("2 поток", "Жду запрос на инициализацию");
+			WaitOne();
 			SetData();
-
 		}
 
-		private void SetData()
+		public void SetData()
 		{
-			Receipt receipt;
+			Receipt receipt = null;
 			Frame item = (Frame)Utils.DeserializeObject(Utils.BitArrayToByteArray(_receivedMessage));
 
-			ConsoleHelper.WriteToConsole("2 поток", $"Получен кадр #{item.Id}");
-
-			var length = Utils.BitArrayToByteArray(item.Body);
-			if (BitConverter.ToInt32(length, 0) != 400)
+			switch (BitConverter.ToInt32(Utils.BitArrayToByteArray(item.Status), 0))
 			{
-				bool[] values = new bool[item.Body.Length];
-				for (int m = 0; m < item.Body.Length; m++)
-					values[m] = item.Body[m];
+				case (int)Type.RIM:
+					ConsoleHelper.WriteToConsole("2 поток", "Пришел запрос на инициализацию. Отправляю разрешение.");
+					receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.SIM)));
+					break;
+				case (int)Type.UP:
+					ConsoleHelper.WriteToConsole("2 поток", "Пришел запрос на передачу данных. Отправляю разрешение.");
+					receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.UA)));
+					break;
+				case (int)Type.RD:
+					ConsoleHelper.WriteToConsole("2 поток", "Пришел запрос на разъединение. Отправляю согласие и завершаю работу.");
+					ConsoleHelper.WriteToConsole("2 поток", $"Полученные данные:  {_encoding.GetString(Utils.BitArrayToByteArray(new BitArray(bitArray.ToArray())))}");
+					receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.DISC)));
+					break;
+				case (int)Type.RR:
+					ConsoleHelper.WriteToConsole("2 поток", $"Получен кадр #{item.Id}");
 
-				var checkSum = Utils.CheckSum(values);
+					bool[] values = new bool[item.Body.Length];
+					for (int m = 0; m < item.Body.Length; m++)
+						values[m] = item.Body[m];
 
-				if (checkSum == item.CheckSum)
-				{
-					for (int i = 0; i < item.UsefulData; i++)
-						bitArray.Add(item.Body[i]);
+					var checkSum = Utils.CheckSum(values);
 
-					receipt = new Receipt(item.Id, new BitArray(BitConverter.GetBytes(200)));
-				}
-				else
-				{
-					ConsoleHelper.WriteToConsole("2 поток", "Ошибка. Завершаю работу");
-					receipt = new Receipt(item.Id, new BitArray(BitConverter.GetBytes(400)));
-				}
+					if (checkSum == item.CheckSum)
+					{
+						for (int i = 0; i < item.UsefulData; i++)
+							bitArray.Add(item.Body[i]);
 
-			}
-			else
-			{
-				ConsoleHelper.WriteToConsole("2 поток", $"Полученные данные:  {_encoding.GetString(Utils.BitArrayToByteArray(new BitArray(bitArray.ToArray())))}");
-				ConsoleHelper.WriteToConsole("2 поток", "Завершаю работу");
-
-				receipt = new Receipt(item.Id, new BitArray(BitConverter.GetBytes(400)));
+						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
+					}
+					else
+					{
+						ConsoleHelper.WriteToConsole("2 поток", "Ошибка. Завершаю работу.");
+						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes(400)));
+						// TODO: запросить конкретный пакет
+					}
+					break;
+				case (int)Type.REJ:
+					break;
+				default:
+					break;
 			}
 
 			_post(new BitArray(Utils.SerializeObject(receipt)));
-			_sendSemaphore.Release();
-			_receiveSemaphore.WaitOne();
+			Release();
+			WaitOne();
 			SetData();
 		}
 
 		public void ReceiveData(BitArray array)
 		{
 			_receivedMessage = array;
+		}
+
+		public void Release()
+		{
+			_sendSemaphore.Release();
+		}
+
+		public void WaitOne()
+		{
+			_receiveSemaphore.WaitOne();
 		}
 	}
 }

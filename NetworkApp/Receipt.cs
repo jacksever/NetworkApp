@@ -8,10 +8,15 @@ namespace NetworkApp
 	{
 		public Receipt() { }
 
-		public Receipt(int id, BitArray array)
+		public Receipt(int id, BitArray status)
 		{
 			Id = id;
-			Status = array;
+			Status = status;
+		}
+
+		public Receipt(BitArray status)
+		{
+			Status = status;
 		}
 
 		public int Id { get; set; }
