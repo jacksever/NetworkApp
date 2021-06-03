@@ -11,7 +11,7 @@ namespace NetworkApp
 		private PostToSecondReceiveWT _post;
 		private BitArray _receivedMessage;
 
-		private string TAG = "3 поток";
+		private readonly string TAG = "3 поток";
 
 		public SecondThreadSender(ref Semaphore sendSemaphore, ref Semaphore receiveSemaphore)
 		{

@@ -39,19 +39,16 @@ namespace NetworkApp
 
 			FirstThreadSender firstThreadSender = new FirstThreadSender(ref firstReceiveSemaphore, ref firstSenderSemaphore);
 			FirstThreadReceive firstThreadReceive = new FirstThreadReceive(ref firstSenderSemaphore, ref firstReceiveSemaphore);
-
 			SecondThreadSender secondThreadSender = new SecondThreadSender(ref secondReceiveSemaphore, ref secondSenderSemaphore);
 			SecondThreadReceive secondThreadReceive = new SecondThreadReceive(ref secondSenderSemaphore, ref secondReceiveSemaphore);
 
 			Thread threadFirstSender = new Thread(new ParameterizedThreadStart(firstThreadSender.FirstThreadMain));
 			Thread threadSecondSender = new Thread(new ParameterizedThreadStart(secondThreadSender.FirstThreadMain));
-
 			Thread threadSecondReceive = new Thread(new ParameterizedThreadStart(secondThreadReceive.SecondThreadMain));
 			Thread threadFirstReceive = new Thread(new ParameterizedThreadStart(firstThreadReceive.SecondThreadMain));
 
 			PostToFirstSenderWT postToFirstSenderWt = new PostToFirstSenderWT(firstThreadSender.ReceiveData);
 			PostToSecondSenderWT postToSecondSenderWt = new PostToSecondSenderWT(secondThreadSender.ReceiveData);
-
 			PostToFirstReceiveWT postToFirstReceiveWt = new PostToFirstReceiveWT(firstThreadReceive.ReceiveData);
 			PostToSecondReceiveWT postToSecondReceiveWt = new PostToSecondReceiveWT(secondThreadReceive.ReceiveData);
 
@@ -72,7 +69,6 @@ namespace NetworkApp
 
 			threadFirstSender.Start(postToFirstReceiveWt);
 			threadSecondSender.Start(postToSecondReceiveWt);
-
 			threadSecondReceive.Start(postToSecondSenderWt);
 			threadFirstReceive.Start(postToFirstSenderWt);
 

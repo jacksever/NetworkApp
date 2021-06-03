@@ -11,7 +11,7 @@ namespace NetworkApp
 		private PostToFirstReceiveWT _post;
 		private BitArray _receivedMessage;
 
-		private string TAG = "1 поток";
+		private readonly string TAG = "1 поток";
 
 		public FirstThreadSender(ref Semaphore sendSemaphore, ref Semaphore receiveSemaphore)
 		{
@@ -98,26 +98,36 @@ namespace NetworkApp
 		private Frame GetFrameWithData()
 		{
 			Frame frame;
-			if (Utils.Result[Utils.Index].Length == Utils.FrameLength)
-				frame = new Frame(
-					id: Utils.IncrementIndexFrame(),
-					body: new BitArray(Utils.Result[Utils.Index]),
-					checkSum: Utils.CheckSum(Utils.Result[Utils.Index]),
-					usefulData: Utils.Result[Utils.Index].Length,
-					status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
+			if (Utils.Result.Length > Utils.Index)
+			{
+				if (Utils.Result[Utils.Index].Length == Utils.FrameLength)
+					frame = new Frame(
+						id: Utils.IncrementIndexFrame(),
+						body: new BitArray(Utils.Result[Utils.Index]),
+						checkSum: Utils.CheckSum(Utils.Result[Utils.Index]),
+						usefulData: Utils.Result[Utils.Index].Length,
+						status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
+				else
+				{
+					var array = AddedData();
+					bool[] values = new bool[array.Length];
+					for (int m = 0; m < array.Length; m++)
+						values[m] = array[m];
+
+					frame = new Frame(
+						id: Utils.IncrementIndexFrame(),
+						body: array,
+						checkSum: Utils.CheckSum(values),
+						usefulData: Utils.Result[Utils.Index].Length,
+						status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
+				}
+
+				ConsoleHelper.WriteToConsole(TAG, $"Передан {Utils.GetIndexFrame} кадр. Жду подтверждения.");
+			}
 			else
 			{
-				var array = AddedData();
-				bool[] values = new bool[array.Length];
-				for (int m = 0; m < array.Length; m++)
-					values[m] = array[m];
-
-				frame = new Frame(
-					id: Utils.IncrementIndexFrame(),
-					body: array,
-					checkSum: Utils.CheckSum(values),
-					usefulData: Utils.Result[Utils.Index].Length,
-					status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
+				frame = new Frame(status: new BitArray(BitConverter.GetBytes((int)Type.RD)));
+				ConsoleHelper.WriteToConsole(TAG, "Передан запрос на разрыв соединения. Жду подтверждения.");
 			}
 
 			ConsoleHelper.WriteToConsole(TAG, $"Передан {Utils.GetIndexFrame} кадр. Жду подтверждения.");

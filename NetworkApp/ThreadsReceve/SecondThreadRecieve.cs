@@ -11,7 +11,7 @@ namespace NetworkApp
 		private BitArray _receivedMessage;
 		private PostToSecondSenderWT _post;
 
-		private string TAG = "4 поток";
+		private readonly string TAG = "4 поток";
 
 		public SecondThreadReceive(ref Semaphore sendSemaphore, ref Semaphore receiveSemaphore)
 		{
@@ -69,9 +69,8 @@ namespace NetworkApp
 					}
 					else
 					{
-						ConsoleHelper.WriteToConsole(TAG, "Ошибка. Завершаю работу.");
-						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes(400)));
-						// TODO: запросить конкретный пакет
+						ConsoleHelper.WriteToConsole(TAG, "Контрольная сумма не совпадает. Запрашиваю заново пакет.");
+						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.RNR)));
 					}
 					break;
 				case (int)Type.REJ:
