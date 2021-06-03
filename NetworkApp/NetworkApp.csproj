@@ -5,4 +5,20 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <LangVersion>default</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <LangVersion>default</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="ThreadsSender\" />
+    <None Remove="ThreadsReceve\" />
+    <None Remove="Entities\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="ThreadsSender\" />
+    <Folder Include="ThreadsReceve\" />
+    <Folder Include="Entities\" />
+  </ItemGroup>
 </Project>

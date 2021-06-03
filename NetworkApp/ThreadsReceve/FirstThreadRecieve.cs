@@ -1,26 +1,20 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 namespace NetworkApp
 {
-	public class SecondThread : IWithData
+	public class FirstThreadReceive : IWithData
 	{
 		private Semaphore _sendSemaphore;
 		private Semaphore _receiveSemaphore;
 		private BitArray _receivedMessage;
 		private PostToFirstWT _post;
-		private Encoding _encoding;
 
-		private static List<bool> bitArray = new List<bool>();
-
-		public SecondThread(ref Semaphore sendSemaphore, ref Semaphore receiveSemaphore, Encoding encoding)
+		public FirstThreadReceive(ref Semaphore sendSemaphore, ref Semaphore receiveSemaphore)
 		{
 			_sendSemaphore = sendSemaphore;
 			_receiveSemaphore = receiveSemaphore;
-			_encoding = encoding;
 		}
 
 		public void SecondThreadMain(object obj)
@@ -49,7 +43,7 @@ namespace NetworkApp
 					break;
 				case (int)Type.RD:
 					ConsoleHelper.WriteToConsole("2 поток", "Пришел запрос на разъединение. Отправляю согласие и завершаю работу.");
-					ConsoleHelper.WriteToConsole("2 поток", $"Полученные данные:  {_encoding.GetString(Utils.BitArrayToByteArray(new BitArray(bitArray.ToArray())))}");
+					ConsoleHelper.WriteToConsole("2 поток", $"Полученные данные:  {Utils.Encoding.GetString(Utils.BitArrayToByteArray(new BitArray(Utils.BitArray.ToArray())))}");
 					receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.DISC)));
 					break;
 				case (int)Type.RR:
@@ -64,7 +58,7 @@ namespace NetworkApp
 					if (checkSum == item.CheckSum)
 					{
 						for (int i = 0; i < item.UsefulData; i++)
-							bitArray.Add(item.Body[i]);
+							Utils.BitArray.Add(item.Body[i]);
 
 						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
 					}

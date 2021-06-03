@@ -1,14 +1,22 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 
 namespace NetworkApp
 {
 	public static class Utils
 	{
 		public static int FrameLength = 56;
+		public static int Index = 0;
+
+		public static Encoding Encoding = Encoding.UTF8;
+		public static bool[][] Result;
+
+		public static List<bool> BitArray = new List<bool>();
 
 		public static byte[] BitArrayToByteArray(BitArray data)
 		{
@@ -53,6 +61,18 @@ namespace NetworkApp
 					checkSum += array[fr] == false ? 0 : 1;
 
 			return checkSum;
+		}
+
+		public static void SerializeData(string message)
+        {
+			var bits = new BitArray(Encoding.GetBytes(message));
+
+			bool[] values = new bool[bits.Count];
+			for (int m = 0; m < bits.Count; m++)
+				values[m] = bits[m];
+
+			int j = 0;
+			Result = values.GroupBy(s => j++ / FrameLength).Select(g => g.ToArray()).ToArray();
 		}
 	}
 }
