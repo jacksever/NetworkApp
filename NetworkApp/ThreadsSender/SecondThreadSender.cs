@@ -8,8 +8,10 @@ namespace NetworkApp
 	{
 		private Semaphore _sendSemaphore;
 		private Semaphore _receiveSemaphore;
-		private PostToSecondWT _post;
+		private PostToSecondReceiveWT _post;
 		private BitArray _receivedMessage;
+
+		private string TAG = "3 поток";
 
 		public SecondThreadSender(ref Semaphore sendSemaphore, ref Semaphore receiveSemaphore)
 		{
@@ -19,11 +21,11 @@ namespace NetworkApp
 
 		public void FirstThreadMain(object obj)
 		{
-			_post = (PostToSecondWT)obj;
+			_post = (PostToSecondReceiveWT)obj;
 
 			_post(new BitArray(Utils.SerializeObject(new Frame(status: new BitArray(BitConverter.GetBytes((int)Type.RIM))))));
 			Release();
-			ConsoleHelper.WriteToConsole("1 поток", $"Отправлен запрос на инициализацию с 2 потоком. Жду подтверждение.");
+			ConsoleHelper.WriteToConsole(TAG, $"Отправлен запрос на инициализацию с 4 потоком. Жду подтверждение.");
 			WaitOne();
 			SetData();
 		}
@@ -35,7 +37,7 @@ namespace NetworkApp
 
 		public void SetData()
 		{
-			Thread.Sleep(200);
+			Thread.Sleep(300);
 			Receipt item = (Receipt)Utils.DeserializeObject(Utils.BitArrayToByteArray(_receivedMessage));
 			Frame frame = null;
 
@@ -43,24 +45,24 @@ namespace NetworkApp
 			{
 				case (int)Type.SIM:
 					frame = new Frame(status: new BitArray(BitConverter.GetBytes((int)Type.UP)));
-					ConsoleHelper.WriteToConsole("1 поток", $"Отправлен запрос на передачу данных 2 потоку. Жду подтверждение.");
+					ConsoleHelper.WriteToConsole(TAG, $"Отправлен запрос на передачу данных 4 потоку. Жду подтверждение.");
 					break;
 				case (int)Type.UA:
-					frame = GetFrameWithData(item.Id);
-					Utils.Index++;
+					frame = GetFrameWithData();
+					Utils.IncrementIndex();
 					break;
 				case (int)Type.DISC:
-					ConsoleHelper.WriteToConsole("1 поток", "Закрываю соединение и завершаю работу.");
+					ConsoleHelper.WriteToConsole(TAG, "Закрываю соединение и завершаю работу.");
 					break;
 				case (int)Type.RR:
 					if (Utils.Result.Length > Utils.Index)
-						frame = GetFrameWithData(item.Id);
+						frame = GetFrameWithData();
 					else
 					{
 						frame = new Frame(status: new BitArray(BitConverter.GetBytes((int)Type.RD)));
-						ConsoleHelper.WriteToConsole("1 поток", "Передан запрос на разрыв соединения. Жду подтверждения.");
+						ConsoleHelper.WriteToConsole(TAG, "Передан запрос на разрыв соединения. Жду подтверждения.");
 					}
-					Utils.Index++;
+					Utils.IncrementIndex();
 					break;
 				case (int)Type.RNR:
 					break;
@@ -93,37 +95,41 @@ namespace NetworkApp
 			return bitArray;
 		}
 
-		private int GetIndexFrame(int lastIndex)
-		{
-			return (lastIndex + 1) != 8 ? lastIndex + 1 : 0;
-		}
-
-		private Frame GetFrameWithData(int index)
+		private Frame GetFrameWithData()
 		{
 			Frame frame;
-			if (Utils.Result[Utils.Index].Length == Utils.FrameLength)
-				frame = new Frame(
-					id: GetIndexFrame(index),
-					body: new BitArray(Utils.Result[Utils.Index]),
-					checkSum: Utils.CheckSum(Utils.Result[Utils.Index]),
-					usefulData: Utils.Result[Utils.Index].Length,
-					status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
+
+			if (Utils.Result.Length > Utils.Index)
+			{
+				if (Utils.Result[Utils.Index].Length == Utils.FrameLength)
+					frame = new Frame(
+						id: Utils.IncrementIndexFrame(),
+						body: new BitArray(Utils.Result[Utils.Index]),
+						checkSum: Utils.CheckSum(Utils.Result[Utils.Index]),
+						usefulData: Utils.Result[Utils.Index].Length,
+						status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
+				else
+				{
+					var array = AddedData();
+					bool[] values = new bool[array.Length];
+					for (int m = 0; m < array.Length; m++)
+						values[m] = array[m];
+
+					frame = new Frame(
+						id: Utils.IncrementIndexFrame(),
+						body: array,
+						checkSum: Utils.CheckSum(values),
+						usefulData: Utils.Result[Utils.Index].Length,
+						status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
+				}
+
+				ConsoleHelper.WriteToConsole(TAG, $"Передан {Utils.GetIndexFrame} кадр. Жду подтверждения.");
+			}
 			else
 			{
-				var array = AddedData();
-				bool[] values = new bool[array.Length];
-				for (int m = 0; m < array.Length; m++)
-					values[m] = array[m];
-
-				frame = new Frame(
-					id: GetIndexFrame(index),
-					body: array,
-					checkSum: Utils.CheckSum(values),
-					usefulData: Utils.Result[Utils.Index].Length,
-					status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
+				frame = new Frame(status: new BitArray(BitConverter.GetBytes((int)Type.RD)));
+				ConsoleHelper.WriteToConsole(TAG, "Передан запрос на разрыв соединения. Жду подтверждения.");
 			}
-
-			ConsoleHelper.WriteToConsole("1 поток", $"Передан {GetIndexFrame(index)} кадр. Жду подтверждения.");
 
 			return frame;
 		}

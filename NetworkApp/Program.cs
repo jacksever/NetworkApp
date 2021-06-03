@@ -5,37 +5,76 @@ using System.Threading.Tasks;
 
 namespace NetworkApp
 {
-	public delegate void PostToFirstWT(BitArray message);
-	public delegate void PostToSecondWT(BitArray message);
+	public delegate void PostToFirstSenderWT(BitArray message);
+	public delegate void PostToSecondSenderWT(BitArray message);
+
+	public delegate void PostToFirstReceiveWT(BitArray message);
+	public delegate void PostToSecondReceiveWT(BitArray message);
 
 	class Program
 	{
 		static void Main()
 		{
-			ConsoleHelper.WriteToConsole("Главный поток", "Введите Ваше сообщение...");
-			var data = Console.ReadLine();
+			ConsoleHelper.WriteToConsole("Главный поток", "Введите '1' для передачи сообщения..");
+			ConsoleHelper.WriteToConsole("Главный поток", "Введите '2' для передачи файла..");
+			int number = int.Parse(Console.ReadLine());
+
+			string data = null;
+			switch (number)
+			{
+				case 1:
+					ConsoleHelper.WriteToConsole("Главный поток", "Введите сообщение..");
+					data = Console.ReadLine();
+					break;
+				case 2:
+					ConsoleHelper.WriteToConsole("Главный поток", "Введите название файла..");
+					data = Console.ReadLine();
+					break;
+			}
 
 			Semaphore firstReceiveSemaphore = new Semaphore(0, 1);
 			Semaphore secondReceiveSemaphore = new Semaphore(0, 1);
+			Semaphore firstSenderSemaphore = new Semaphore(0, 1);
+			Semaphore secondSenderSemaphore = new Semaphore(0, 1);
 
-			FirstThreadSender firstThread = new FirstThreadSender(ref secondReceiveSemaphore, ref firstReceiveSemaphore);
-			FirstThreadReceive secondThread = new FirstThreadReceive(ref firstReceiveSemaphore, ref secondReceiveSemaphore);
+			FirstThreadSender firstThreadSender = new FirstThreadSender(ref firstReceiveSemaphore, ref firstSenderSemaphore);
+			FirstThreadReceive firstThreadReceive = new FirstThreadReceive(ref firstSenderSemaphore, ref firstReceiveSemaphore);
 
-			Thread threadFirst = new Thread(new ParameterizedThreadStart(firstThread.FirstThreadMain));
-			Thread threadSecond = new Thread(new ParameterizedThreadStart(secondThread.SecondThreadMain));
+			SecondThreadSender secondThreadSender = new SecondThreadSender(ref secondReceiveSemaphore, ref secondSenderSemaphore);
+			SecondThreadReceive secondThreadReceive = new SecondThreadReceive(ref secondSenderSemaphore, ref secondReceiveSemaphore);
 
-			PostToFirstWT postToFirstWt = new PostToFirstWT(firstThread.ReceiveData);
-			PostToSecondWT postToSecondWt = new PostToSecondWT(secondThread.ReceiveData);
+			Thread threadFirstSender = new Thread(new ParameterizedThreadStart(firstThreadSender.FirstThreadMain));
+			Thread threadSecondSender = new Thread(new ParameterizedThreadStart(secondThreadSender.FirstThreadMain));
+
+			Thread threadSecondReceive = new Thread(new ParameterizedThreadStart(secondThreadReceive.SecondThreadMain));
+			Thread threadFirstReceive = new Thread(new ParameterizedThreadStart(firstThreadReceive.SecondThreadMain));
+
+			PostToFirstSenderWT postToFirstSenderWt = new PostToFirstSenderWT(firstThreadSender.ReceiveData);
+			PostToSecondSenderWT postToSecondSenderWt = new PostToSecondSenderWT(secondThreadSender.ReceiveData);
+
+			PostToFirstReceiveWT postToFirstReceiveWt = new PostToFirstReceiveWT(firstThreadReceive.ReceiveData);
+			PostToSecondReceiveWT postToSecondReceiveWt = new PostToSecondReceiveWT(secondThreadReceive.ReceiveData);
 
 			var serializeMessage = Task.Factory.StartNew(() =>
 			{
-				Utils.SerializeData(data);
+				switch(number)
+				{
+					case 1:
+						Utils.SerializeMessage(data);
+						break;
+					case 2:
+						Utils.SerializeFile(data);
+						break;
+				}
 			});
 
 			serializeMessage.Wait();
 
-			threadFirst.Start(postToSecondWt);
-			threadSecond.Start(postToFirstWt);
+			threadFirstSender.Start(postToFirstReceiveWt);
+			threadSecondSender.Start(postToSecondReceiveWt);
+
+			threadSecondReceive.Start(postToSecondSenderWt);
+			threadFirstReceive.Start(postToFirstSenderWt);
 
 			Console.ReadLine();
 		}
