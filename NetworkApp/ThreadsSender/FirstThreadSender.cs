@@ -107,7 +107,7 @@ namespace NetworkApp
 					if (Utils.Data[Utils.Index].Length == Utils.FrameLength)
 						frame = new Frame(
 							id: Utils.IncrementIndexFrame(),
-							body: Utils.SetNoiceRandom(new BitArray(Utils.Data[Utils.Index])),
+							body: Utils.SetNoiseRandom(new BitArray(Utils.Data[Utils.Index])),
 							checkSum: Utils.CheckSum(Utils.Data[Utils.Index]),
 							usefulData: Utils.Data[Utils.Index].Length,
 							status: new BitArray(BitConverter.GetBytes((int)Type.RR)),
@@ -143,7 +143,7 @@ namespace NetworkApp
 				if (Utils.Data[(int)repeat].Length == Utils.FrameLength)
 					frame = new Frame(
 						id: Utils.IncrementIndexFrame(),
-						body: Utils.SetNoiceRandom(new BitArray(Utils.Data[(int)repeat])),
+						body: Utils.SetNoiseRandom(new BitArray(Utils.Data[(int)repeat])),
 						checkSum: Utils.CheckSum(Utils.Data[(int)repeat]),
 						usefulData: Utils.Data[(int)repeat].Length,
 						status: new BitArray(BitConverter.GetBytes((int)Type.RR)),

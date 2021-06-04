@@ -36,12 +36,10 @@ namespace NetworkApp
 		{
 			object LockObject = new object();
 			lock (LockObject)
-			{
 				if (index == null)
 					Result.Add(data);
 				else
 					Result.Insert((int)index, data);
-			}
 		}
 
 		public static int GetIndexFrame => FrameId;
@@ -56,16 +54,12 @@ namespace NetworkApp
 			return FrameId;
 		}
 
-		public static BitArray SetNoiceRandom(BitArray body)
+		public static BitArray SetNoiseRandom(BitArray body)
 		{
 			if (Random.Next(1, 100) < 20)
-			{
 				for (int i = 0; i < body.Length; i++)
-				{
 					if (i % 10 == 0)
 						body[i] = false;
-				}
-			}
 
 			return body;
 		}
@@ -152,19 +146,14 @@ namespace NetworkApp
 		{
 			object LockObject = new object();
 			lock (LockObject)
-			{
 				if (!isFinished)
 				{
 					isFinished = true;
 					List<bool> booleans = new List<bool>();
 
-					for(int i = 0; i < Result.Count; i++)
-					{
+					for (int i = 0; i < Result.Count; i++)
 						for (int j = 0; j < Result[i].Length; j++)
-						{
 							booleans.Add(Result[i][j]);
-						}
-					}
 
 					byte[] byteArray = BitArrayToByteArray(new BitArray(booleans.ToArray()));
 
@@ -179,14 +168,12 @@ namespace NetworkApp
 						ConsoleHelper.WriteToConsole(tag + FileExtension, $"Что-то пошло не так...");
 					}
 				}
-			}
 		}
 
 		public static void DeserializeMessage(string tag)
 		{
 			object LockObject = new object();
 			lock (LockObject)
-			{
 				if (!isFinished)
 				{
 					isFinished = true;
@@ -194,16 +181,11 @@ namespace NetworkApp
 					List<bool> booleans = new List<bool>();
 
 					for (int i = 0; i < Result.Count; i++)
-					{
 						for (int j = 0; j < Result[i].Length; j++)
-						{
 							booleans.Add(Result[i][j]);
-						}
-					}
 
 					ConsoleHelper.WriteToConsole(tag, $"Полученные данные: {Encoding.GetString(BitArrayToByteArray(new BitArray(booleans.ToArray())))}");
 				}
-			}
 		}
 	}
 }
