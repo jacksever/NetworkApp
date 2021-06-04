@@ -1,8 +1,10 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Text;
 
 namespace NetworkApp
 {
@@ -10,12 +12,21 @@ namespace NetworkApp
 	{
 		public static int FrameLength = 56;
 
+		private static readonly Encoding Encoding = Encoding.UTF8;
+		public static List<BitArray> Result = new List<BitArray>();
+		public static bool[][] Data;
+
+		public static void AddDataInBuffer(BitArray data)
+		{
+			Result.Add(data);
+		}
+
 		public static byte[] BitArrayToByteArray(BitArray data)
 		{
 			if (data == null)
 				return null;
 
-			byte[] array = new byte[(data.Length - 1) / 8 + 1];
+			var array = new byte[(data.Length - 1) / 8 + 1];
 			data.CopyTo(array, 0);
 			return array;
 		}
@@ -53,6 +64,28 @@ namespace NetworkApp
 					checkSum += array[fr] == false ? 0 : 1;
 
 			return checkSum;
+		}
+
+		public static void SerializeMessage(string message)
+		{
+			var bits = new BitArray(Encoding.GetBytes(message));
+			var values = new bool[bits.Count];
+			for (int m = 0; m < bits.Count; m++)
+				values[m] = bits[m];
+
+			int j = 0;
+			Data = values.GroupBy(s => j++ / FrameLength).Select(g => g.ToArray()).ToArray();
+		}
+
+		public static void DeserializeMessage(string tag)
+		{
+			var booleans = new List<bool>();
+
+			for (int i = 0; i < Result.Count; i++)
+				for (int j = 0; j < Result[i].Length; j++)
+					booleans.Add(Result[i][j]);
+
+			ConsoleHelper.WriteToConsole(tag, $"Полученные данные: {Encoding.GetString(BitArrayToByteArray(new BitArray(booleans.ToArray())))}");
 		}
 	}
 }
