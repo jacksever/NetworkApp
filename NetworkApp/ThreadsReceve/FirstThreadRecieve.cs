@@ -62,8 +62,10 @@ namespace NetworkApp
 
 					if (checkSum == item.CheckSum)
 					{
-						for (int i = 0; i < item.UsefulData; i++)
-							Utils.AddDataInBuffer(item.Body[i]);
+						if (item.RepeatIndex == null)
+							Utils.AddDataInBuffer(null, item.Body);
+						else
+							Utils.AddDataInBuffer(item.RepeatIndex, item.Body);
 
 						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
 					}

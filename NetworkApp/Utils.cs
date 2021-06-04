@@ -16,13 +16,14 @@ namespace NetworkApp
 		private static int FrameId = 0;
 
 		public static Encoding Encoding = Encoding.UTF8;
-		public static bool[][] Result;
+		private static Random Random = new Random();
+		public static bool[][] Data;
+		private static string FileExtension;
 
-		public static List<bool> BitArray = new List<bool>();
+		public static List<BitArray> Result = new List<BitArray>();
 
 		private static bool isFinished = false;
 		public static bool isFile = false;
-		private static string FileExtension;
 
 		public static void IncrementIndex()
 		{
@@ -31,11 +32,16 @@ namespace NetworkApp
 				Index++;
 		}
 
-		public static void AddDataInBuffer(bool data)
+		public static void AddDataInBuffer(int? index, BitArray data)
 		{
 			object LockObject = new object();
 			lock (LockObject)
-				BitArray.Add(data);
+			{
+				if (index == null)
+					Result.Add(data);
+				else
+					Result.Insert((int)index, data);
+			}
 		}
 
 		public static int GetIndexFrame => FrameId;
@@ -48,6 +54,20 @@ namespace NetworkApp
 				FrameId++;
 
 			return FrameId;
+		}
+
+		public static BitArray SetNoiceRandom(BitArray body)
+		{
+			if (Random.Next(1, 100) < 20)
+			{
+				for (int i = 0; i < body.Length; i++)
+				{
+					if (i % 10 == 0)
+						body[i] = false;
+				}
+			}
+
+			return body;
 		}
 
 		public static byte[] BitArrayToByteArray(BitArray data)
@@ -104,7 +124,7 @@ namespace NetworkApp
 				values[m] = bits[m];
 
 			int j = 0;
-			Result = values.GroupBy(s => j++ / FrameLength).Select(g => g.ToArray()).ToArray();
+			Data = values.GroupBy(s => j++ / FrameLength).Select(g => g.ToArray()).ToArray();
 		}
 
 		public static void SerializeFile(string fileName)
@@ -125,7 +145,7 @@ namespace NetworkApp
 				values[m] = bits[m];
 
 			int j = 0;
-			Result = values.GroupBy(s => j++ / FrameLength).Select(g => g.ToArray()).ToArray();
+			Data = values.GroupBy(s => j++ / FrameLength).Select(g => g.ToArray()).ToArray();
 		}
 
 		public static void DeserializeFile(string tag)
@@ -136,7 +156,17 @@ namespace NetworkApp
 				if (!isFinished)
 				{
 					isFinished = true;
-					byte[] byteArray = BitArrayToByteArray(new BitArray(BitArray.ToArray()));
+					List<bool> booleans = new List<bool>();
+
+					for(int i = 0; i < Result.Count; i++)
+					{
+						for (int j = 0; j < Result[i].Length; j++)
+						{
+							booleans.Add(Result[i][j]);
+						}
+					}
+
+					byte[] byteArray = BitArrayToByteArray(new BitArray(booleans.ToArray()));
 
 					try
 					{
@@ -160,7 +190,18 @@ namespace NetworkApp
 				if (!isFinished)
 				{
 					isFinished = true;
-					ConsoleHelper.WriteToConsole(tag, $"Полученные данные: {Encoding.GetString(BitArrayToByteArray(new BitArray(BitArray.ToArray())))}");
+
+					List<bool> booleans = new List<bool>();
+
+					for (int i = 0; i < Result.Count; i++)
+					{
+						for (int j = 0; j < Result[i].Length; j++)
+						{
+							booleans.Add(Result[i][j]);
+						}
+					}
+
+					ConsoleHelper.WriteToConsole(tag, $"Полученные данные: {Encoding.GetString(BitArrayToByteArray(new BitArray(booleans.ToArray())))}");
 				}
 			}
 		}
