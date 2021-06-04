@@ -13,28 +13,27 @@ namespace NetworkApp
 	{
 		public static int FrameLength = 56;
 		public static int Index = 0;
-		private static int FrameId = 0;
 
 		public static Encoding Encoding = Encoding.UTF8;
-		private static Random Random = new Random();
-		public static bool[][] Data;
-		private static string FileExtension;
-
 		public static List<BitArray> Result = new List<BitArray>();
-
-		private static bool isFinished = false;
+		public static bool[][] Data;
 		public static bool isFile = false;
+
+		private readonly static Random Random = new Random();
+		private static int FrameId = 0;
+		private static string FileExtension;
+		private static bool isFinished = false;
 
 		public static void IncrementIndex()
 		{
-			object LockObject = new object();
+			var LockObject = new object();
 			lock (LockObject)
 				Index++;
 		}
 
 		public static void AddDataInBuffer(int? index, BitArray data)
 		{
-			object LockObject = new object();
+			var LockObject = new object();
 			lock (LockObject)
 				if (index == null)
 					Result.Add(data);
@@ -69,7 +68,7 @@ namespace NetworkApp
 			if (data == null)
 				return null;
 
-			byte[] array = new byte[(data.Length - 1) / 8 + 1];
+			var array = new byte[(data.Length - 1) / 8 + 1];
 			data.CopyTo(array, 0);
 			return array;
 		}
@@ -112,8 +111,7 @@ namespace NetworkApp
 		public static void SerializeMessage(string message)
 		{
 			var bits = new BitArray(Encoding.GetBytes(message));
-
-			bool[] values = new bool[bits.Count];
+			var values = new bool[bits.Count];
 			for (int m = 0; m < bits.Count; m++)
 				values[m] = bits[m];
 
@@ -134,7 +132,7 @@ namespace NetworkApp
 				bits = new BitArray(binaryReader.ReadBytes((int)fs.Length));
 			}
 
-			bool[] values = new bool[bits.Count];
+			var values = new bool[bits.Count];
 			for (int m = 0; m < bits.Count; m++)
 				values[m] = bits[m];
 
@@ -144,18 +142,18 @@ namespace NetworkApp
 
 		public static void DeserializeFile(string tag)
 		{
-			object LockObject = new object();
+			var LockObject = new object();
 			lock (LockObject)
 				if (!isFinished)
 				{
 					isFinished = true;
-					List<bool> booleans = new List<bool>();
+					var booleans = new List<bool>();
 
 					for (int i = 0; i < Result.Count; i++)
 						for (int j = 0; j < Result[i].Length; j++)
 							booleans.Add(Result[i][j]);
 
-					byte[] byteArray = BitArrayToByteArray(new BitArray(booleans.ToArray()));
+					var byteArray = BitArrayToByteArray(new BitArray(booleans.ToArray()));
 
 					try
 					{
@@ -172,13 +170,13 @@ namespace NetworkApp
 
 		public static void DeserializeMessage(string tag)
 		{
-			object LockObject = new object();
+			var LockObject = new object();
 			lock (LockObject)
 				if (!isFinished)
 				{
 					isFinished = true;
 
-					List<bool> booleans = new List<bool>();
+					var booleans = new List<bool>();
 
 					for (int i = 0; i < Result.Count; i++)
 						for (int j = 0; j < Result[i].Length; j++)

@@ -7,27 +7,28 @@ namespace NetworkApp
 {
 	public delegate void PostToFirstSenderWT(BitArray message);
 	public delegate void PostToSecondSenderWT(BitArray message);
-
 	public delegate void PostToFirstReceiveWT(BitArray message);
 	public delegate void PostToSecondReceiveWT(BitArray message);
 
-	class Program
+	public class Program
 	{
+		private static readonly string TAG = "Главный поток";
+
 		static void Main()
 		{
-			ConsoleHelper.WriteToConsole("Главный поток", "Введите '1' для передачи сообщения..");
-			ConsoleHelper.WriteToConsole("Главный поток", "Введите '2' для передачи файла..");
+			ConsoleHelper.WriteToConsole(TAG, "Введите '1' для передачи сообщения..");
+			ConsoleHelper.WriteToConsole(TAG, "Введите '2' для передачи файла..");
 			int number = int.Parse(Console.ReadLine());
 
 			string data = null;
 			switch (number)
 			{
 				case 1:
-					ConsoleHelper.WriteToConsole("Главный поток", "Введите сообщение..");
+					ConsoleHelper.WriteToConsole(TAG, "Введите сообщение..");
 					data = Console.ReadLine();
 					break;
 				case 2:
-					ConsoleHelper.WriteToConsole("Главный поток", "Введите название файла..");
+					ConsoleHelper.WriteToConsole(TAG, "Введите название файла..");
 					data = Console.ReadLine();
 					break;
 			}
@@ -54,7 +55,7 @@ namespace NetworkApp
 
 			var serializeMessage = Task.Factory.StartNew(() =>
 			{
-				switch(number)
+				switch (number)
 				{
 					case 1:
 						Utils.SerializeMessage(data);

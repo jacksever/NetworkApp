@@ -65,10 +65,8 @@ namespace NetworkApp
 					}
 					Utils.IncrementIndex();
 					break;
-				case (int)Type.RNR:
+				case (int)Type.FRMR:
 					frame = GetFrameWithData(index);
-					break;
-				case (int)Type.REJ:
 					break;
 				default:
 					break;
@@ -115,7 +113,7 @@ namespace NetworkApp
 					else
 					{
 						var array = AddedData();
-						bool[] values = new bool[array.Length];
+						var values = new bool[array.Length];
 						for (int m = 0; m < array.Length; m++)
 							values[m] = array[m];
 
@@ -151,7 +149,7 @@ namespace NetworkApp
 				else
 				{
 					var array = AddedData();
-					bool[] values = new bool[array.Length];
+					var values = new bool[array.Length];
 					for (int m = 0; m < array.Length; m++)
 						values[m] = array[m];
 

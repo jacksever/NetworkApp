@@ -4,7 +4,7 @@ namespace NetworkApp
 {
 	public static class ConsoleHelper
 	{
-		public static object LockObject = new object();
+		static readonly object LockObject = new object();
 
 		public static void WriteToConsole(string info, string write)
 		{

@@ -54,7 +54,7 @@ namespace NetworkApp
 				case (int)Type.RR:
 					ConsoleHelper.WriteToConsole(TAG, $"Получен кадр #{item.Id}");
 
-					bool[] values = new bool[item.Body.Length];
+					var values = new bool[item.Body.Length];
 					for (int m = 0; m < item.Body.Length; m++)
 						values[m] = item.Body[m];
 
@@ -72,7 +72,7 @@ namespace NetworkApp
 					else
 					{
 						ConsoleHelper.WriteToConsole(TAG, "Контрольная сумма не совпадает. Запрашиваю заново пакет.");
-						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.RNR)));
+						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.FRMR)));
 					}
 					break;
 				case (int)Type.REJ:
