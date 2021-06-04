@@ -75,8 +75,6 @@ namespace NetworkApp
 						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.FRMR)));
 					}
 					break;
-				case (int)Type.REJ:
-					break;
 				default:
 					break;
 			}
