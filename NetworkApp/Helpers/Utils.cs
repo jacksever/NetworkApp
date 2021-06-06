@@ -13,6 +13,7 @@ namespace NetworkApp
 	{
 		public static int FrameLength = 56;
 		public static int Index = 0;
+		static uint[] CRCTable = new uint[256];
 
 		public static Encoding Encoding = Encoding.UTF8;
 		public static List<BitArray> Result = new List<BitArray>();
@@ -23,6 +24,34 @@ namespace NetworkApp
 		private static int FrameId = 0;
 		private static string FileExtension;
 		private static bool isFinished = false;
+
+		public static void BuildCRCTable()
+		{
+			uint crc;
+
+			for (uint i = 0; i < 256; i++)
+			{
+				crc = i;
+				for (int j = 0; j < 8; j++)
+					crc = ((crc & 1) == 1) ? (crc >> 1) ^ 0xEDB88320 : crc >> 1;
+
+				CRCTable[i] = crc;
+			}
+		}
+
+		public static uint CheckSum(bool[] data)
+		{
+			uint result = 0xFFFFFFFF;
+			byte[] array = BitArrayToByteArray(new BitArray(data));
+
+			for (int i = 0; i < array.Length; i++)
+			{
+				result >>= 8;
+				result ^= CRCTable[(byte)(result & 0xFF) ^ array[i]];
+			}
+
+			return result;
+		}
 
 		public static void IncrementIndex()
 		{
@@ -35,10 +64,16 @@ namespace NetworkApp
 		{
 			var LockObject = new object();
 			lock (LockObject)
-				if (index == null)
-					Result.Add(data);
-				else
-					Result.Insert((int)index, data);
+			{
+				try
+				{
+					if (index == null)
+						Result.Add(data);
+					else
+						Result.Insert((int)index, data);
+				}
+				catch(Exception) { }
+			}
 		}
 
 		public static int GetIndexFrame => FrameId;
@@ -55,10 +90,10 @@ namespace NetworkApp
 
 		public static BitArray SetNoiseRandom(BitArray body)
 		{
-			if (Random.Next(1, 100) < 20)
+			if (Random.Next(1, 100) < 10)
 				for (int i = 0; i < body.Length; i++)
-					if (i % 10 == 0)
-						body[i] = false;
+					if (i % Random.Next(1, 5) == 0)
+						body[i] = Random.Next(1, 10) < 5;
 
 			return body;
 		}
@@ -96,16 +131,6 @@ namespace NetworkApp
 			using var ms = new MemoryStream();
 			bf.Serialize(ms, obj);
 			return ms.ToArray();
-		}
-
-		public static int CheckSum(bool[] array)
-		{
-			int checkSum = 0;
-			for (int fr = 0; fr < array.Length; fr++)
-				if (fr % 5 == 0)
-					checkSum += array[fr] == false ? 0 : 1;
-
-			return checkSum;
 		}
 
 		public static void SerializeMessage(string message)

@@ -12,6 +12,7 @@ namespace NetworkApp
 		private BitArray _receivedMessage;
 
 		private readonly string TAG = "3 поток";
+		private readonly Random random = new Random();
 		private int index = 0;
 
 		public SecondThreadSender(ref Semaphore sendSemaphore, ref Semaphore receiveSemaphore)
@@ -24,9 +25,9 @@ namespace NetworkApp
 		{
 			_post = (PostToSecondReceiveWT)obj;
 
+			ConsoleHelper.WriteToConsole(TAG, $"Отправлен запрос на инициализацию с 4 потоком. Жду подтверждение.");
 			_post(new BitArray(Utils.SerializeObject(new Frame(status: new BitArray(BitConverter.GetBytes((int)Type.RIM))))));
 			Release();
-			ConsoleHelper.WriteToConsole(TAG, $"Отправлен запрос на инициализацию с 4 потоком. Жду подтверждение.");
 			WaitOne();
 			SetData();
 		}
@@ -38,46 +39,75 @@ namespace NetworkApp
 
 		public void SetData()
 		{
-			Thread.Sleep(300);
+			Thread.Sleep(500);
 			Receipt item = (Receipt)Utils.DeserializeObject(Utils.BitArrayToByteArray(_receivedMessage));
 			Frame frame = null;
 
-			switch (BitConverter.ToInt32(Utils.BitArrayToByteArray(item.Status), 0))
+			if (item != null)
 			{
-				case (int)Type.SIM:
-					frame = new Frame(status: new BitArray(BitConverter.GetBytes((int)Type.UP)));
-					ConsoleHelper.WriteToConsole(TAG, $"Отправлен запрос на передачу данных 4 потоку. Жду подтверждение.");
-					break;
-				case (int)Type.UA:
-					frame = GetFrameWithData(null);
-					Utils.IncrementIndex();
-					break;
-				case (int)Type.DISC:
-					ConsoleHelper.WriteToConsole(TAG, "Закрываю соединение и завершаю работу.");
-					break;
-				case (int)Type.RR:
-					if (Utils.Data.Length > Utils.Index)
+				switch (BitConverter.ToInt32(Utils.BitArrayToByteArray(item.Status), 0))
+				{
+					case (int)Type.SIM:
+						frame = new Frame(status: new BitArray(BitConverter.GetBytes((int)Type.UP)));
+						ConsoleHelper.WriteToConsole(TAG, $"Отправлен запрос на передачу данных 2 потоку. Жду подтверждение.");
+						break;
+					case (int)Type.UA:
 						frame = GetFrameWithData(null);
-					else
-					{
-						frame = new Frame(status: new BitArray(BitConverter.GetBytes((int)Type.RD)));
-						ConsoleHelper.WriteToConsole(TAG, "Передан запрос на разрыв соединения. Жду подтверждения.");
-					}
-					Utils.IncrementIndex();
-					break;
-				case (int)Type.FRMR:
-					frame = GetFrameWithData(index);
-					break;
-				default:
-					break;
+						Utils.IncrementIndex();
+						break;
+					case (int)Type.DISC:
+						ConsoleHelper.WriteToConsole(TAG, "Закрываю соединение и завершаю работу.");
+						break;
+					case (int)Type.RR:
+						if (Utils.Data.Length > Utils.Index)
+							frame = GetFrameWithData(null);
+						else
+						{
+							frame = new Frame(status: new BitArray(BitConverter.GetBytes((int)Type.RD)));
+							ConsoleHelper.WriteToConsole(TAG, "Передан запрос на разрыв соединения. Жду подтверждения.");
+						}
+						Utils.IncrementIndex();
+						break;
+					case (int)Type.FRMR:
+						frame = GetFrameWithData(index);
+						break;
+					default:
+						break;
+				}
+			}
+			else
+			{
+				ConsoleHelper.WriteToConsole(TAG, "Квитанция по пакету не пришла. Отправляю заново");
+				frame = GetFrameWithData(index);
 			}
 
 			if (frame != null)
 			{
-				_post(new BitArray(Utils.SerializeObject(frame)));
-				Release();
-				WaitOne();
-				SetData();
+				var randomNumber = random.Next(1, 100);
+
+				if (randomNumber > 10)
+				{
+					_post(new BitArray(Utils.SerializeObject(frame)));
+					Release();
+					WaitOne();
+					SetData();
+				}
+				else
+				{
+					if (BitConverter.ToInt32(Utils.BitArrayToByteArray(frame.Status), 0) == (int)Type.RR ||
+						BitConverter.ToInt32(Utils.BitArrayToByteArray(frame.Status), 0) == (int)Type.UA)
+					{
+						_receivedMessage = null;
+						SetData();
+					}
+					else
+					{
+						_post(new BitArray(Utils.SerializeObject(frame)));
+						Release();
+						WaitOne();
+						SetData();
+					}
+				}
 			}
 		}
 

@@ -58,9 +58,11 @@ namespace NetworkApp
 				switch (number)
 				{
 					case 1:
+						Utils.BuildCRCTable();
 						Utils.SerializeMessage(data);
 						break;
 					case 2:
+						Utils.BuildCRCTable();
 						Utils.SerializeFile(data);
 						break;
 				}
