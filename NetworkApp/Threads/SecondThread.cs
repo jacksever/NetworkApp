@@ -12,6 +12,7 @@ namespace NetworkApp
 		private PostToFirstWT _post;
 
 		private readonly string TAG = "2 поток";
+		private static int numberFrame = 0;
 
 		public SecondThread(ref Semaphore sendSemaphore, ref Semaphore receiveSemaphore)
 		{
@@ -33,47 +34,63 @@ namespace NetworkApp
 			Receipt receipt = null;
 			Frame item = (Frame)Utils.DeserializeObject(Utils.BitArrayToByteArray(_receivedMessage));
 
-			switch (BitConverter.ToInt32(Utils.BitArrayToByteArray(item.Status), 0))
+			if (item == null)
 			{
-				case (int)Type.RIM:
-					ConsoleHelper.WriteToConsole(TAG, "Пришел запрос на инициализацию. Отправляю разрешение.");
-					receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.SIM)));
-					break;
-				case (int)Type.UP:
-					ConsoleHelper.WriteToConsole(TAG, "Пришел запрос на передачу данных. Отправляю разрешение.");
-					receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.UA)));
-					break;
-				case (int)Type.RD:
-					ConsoleHelper.WriteToConsole(TAG, "Пришел запрос на разъединение. Отправляю согласие и завершаю работу.");
-					Utils.DeserializeMessage(TAG);
-					receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.DISC)));
-					break;
-				case (int)Type.RR:
-					ConsoleHelper.WriteToConsole(TAG, $"Получен кадр #{item.Id}");
+				ConsoleHelper.WriteToConsole(TAG, "Принятый пакет оказался с шумами. Запрашиваю заново пакет.");
+				receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.REJ)));
+			}
+			else
+			{
+				bool frameId = true;
+				if (item.Id != numberFrame + 1)
+					if (item.Id != 0 && numberFrame == 7)
+						frameId = false;
 
-					var values = new bool[item.Body.Length];
-					for (int m = 0; m < item.Body.Length; m++)
-						values[m] = item.Body[m];
+				switch (BitConverter.ToInt32(Utils.BitArrayToByteArray(item.Status), 0))
+				{
+					case (int)Type.RIM:
+						ConsoleHelper.WriteToConsole(TAG, "Пришел запрос на инициализацию. Отправляю разрешение.");
+						receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.SIM)));
+						break;
+					case (int)Type.UP:
+						ConsoleHelper.WriteToConsole(TAG, "Пришел запрос на передачу данных. Отправляю разрешение.");
+						receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.UA)));
+						break;
+					case (int)Type.RD:
+						ConsoleHelper.WriteToConsole(TAG, "Пришел запрос на разъединение. Отправляю согласие и завершаю работу.");
+						Utils.DeserializeMessage(TAG);
+						receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.DISC)));
+						break;
+					case (int)Type.RR:
+						ConsoleHelper.WriteToConsole(TAG, $"Получен кадр #{item.Id}");
 
-					var checkSum = Utils.CheckSum(values);
+						var values = new bool[item.Body.Length];
+						for (int m = 0; m < item.Body.Length; m++)
+							values[m] = item.Body[m];
 
-					if (checkSum == item.CheckSum)
-					{
-						if (item.RepeatIndex == null)
-							Utils.AddDataInBuffer(null, item.Body);
+						var checkSum = Utils.CheckSum(values);
+
+						if (checkSum == item.CheckSum && frameId)
+						{
+							numberFrame = item.Id;
+							if (item.RepeatIndex == null)
+								Utils.AddDataInBuffer(null, item.Body);
+							else
+								Utils.AddDataInBuffer(item.RepeatIndex, item.Body);
+
+							receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
+						}
 						else
-							Utils.AddDataInBuffer(item.RepeatIndex, item.Body);
-
-						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
-					}
-					else
-					{
-						ConsoleHelper.WriteToConsole(TAG, "Контрольная сумма не совпадает. Запрашиваю заново пакет.");
-						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.FRMR)));
-					}
-					break;
-				default:
-					break;
+						{
+							ConsoleHelper.WriteToConsole(TAG, "Принятый пакет оказался с шумами. Запрашиваю заново пакет.");
+							receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.REJ)));
+						}
+						break;
+					default:
+						ConsoleHelper.WriteToConsole(TAG, "Принятый пакет оказался с шумами. Запрашиваю заново пакет.");
+						receipt = new Receipt(status: new BitArray(BitConverter.GetBytes((int)Type.REJ)));
+						break;
+				}
 			}
 
 			_post(new BitArray(Utils.SerializeObject(receipt)));

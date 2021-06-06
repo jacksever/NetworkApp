@@ -68,7 +68,7 @@ namespace NetworkApp
 						}
 						Utils.IncrementIndex();
 						break;
-					case (int)Type.FRMR:
+					case (int)Type.REJ:
 						frame = GetFrameWithData(index);
 						break;
 					default:
@@ -87,7 +87,7 @@ namespace NetworkApp
 
 				if (randomNumber > 10)
 				{
-					_post(new BitArray(Utils.SerializeObject(frame)));
+					_post(Utils.SetNoiseRandom(new BitArray(Utils.SerializeObject(frame))));
 					Release();
 					WaitOne();
 					SetData();
@@ -102,7 +102,7 @@ namespace NetworkApp
 					}
 					else
 					{
-						_post(new BitArray(Utils.SerializeObject(frame)));
+						_post(Utils.SetNoiseRandom(new BitArray(Utils.SerializeObject(frame))));
 						Release();
 						WaitOne();
 						SetData();
@@ -135,7 +135,7 @@ namespace NetworkApp
 					if (Utils.Data[Utils.Index].Length == Utils.FrameLength)
 						frame = new Frame(
 							id: Utils.IncrementIndexFrame(),
-							body: Utils.SetNoiseRandom(new BitArray(Utils.Data[Utils.Index])),
+							body: new BitArray(Utils.Data[Utils.Index]),
 							checkSum: Utils.CheckSum(Utils.Data[Utils.Index]),
 							usefulData: Utils.Data[Utils.Index].Length,
 							status: new BitArray(BitConverter.GetBytes((int)Type.RR)),
@@ -170,8 +170,8 @@ namespace NetworkApp
 			{
 				if (Utils.Data[(int)repeat].Length == Utils.FrameLength)
 					frame = new Frame(
-						id: Utils.IncrementIndexFrame(),
-						body: Utils.SetNoiseRandom(new BitArray(Utils.Data[(int)repeat])),
+						id: Utils.GetIndexFrame,
+						body: new BitArray(Utils.Data[(int)repeat]),
 						checkSum: Utils.CheckSum(Utils.Data[(int)repeat]),
 						usefulData: Utils.Data[(int)repeat].Length,
 						status: new BitArray(BitConverter.GetBytes((int)Type.RR)),
@@ -184,7 +184,7 @@ namespace NetworkApp
 						values[m] = array[m];
 
 					frame = new Frame(
-						id: Utils.IncrementIndexFrame(),
+						id: Utils.GetIndexFrame,
 						body: array,
 						checkSum: Utils.CheckSum(values),
 						usefulData: Utils.Data[(int)repeat].Length,

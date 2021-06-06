@@ -33,7 +33,6 @@ namespace NetworkApp
 			var serializeMessage = Task.Factory.StartNew(() =>
 			{
 				Utils.SerializeMessage(data);
-				Utils.BuildCRCTable();
 			});
 
 			serializeMessage.Wait();

@@ -12,40 +12,20 @@ namespace NetworkApp
 	public static class Utils
 	{
 		public static int FrameLength = 56;
-		private static uint[] CRCTable = new uint[256];
 		private static Random Random = new Random();
 		public static int Index = 0;
 		private static int FrameId = 0;
-
 
 		private static readonly Encoding Encoding = Encoding.UTF8;
 		public static List<BitArray> Result = new List<BitArray>();
 		public static bool[][] Data;
 
-		public static void BuildCRCTable()
+		public static int CheckSum(bool[] array)
 		{
-			uint crc;
-
-			for (uint i = 0; i < 256; i++)
-			{
-				crc = i;
-				for (int j = 0; j < 8; j++)
-					crc = ((crc & 1) == 1) ? (crc >> 1) ^ 0xEDB88320 : crc >> 1;
-
-				CRCTable[i] = crc;
-			}
-		}
-
-		public static uint CheckSum(bool[] data)
-		{
-			uint result = 0xFFFFFFFF;
-			byte[] array = BitArrayToByteArray(new BitArray(data));
-
-			for (int i = 0; i < array.Length; i++)
-			{
-				result >>= 8;
-				result ^= CRCTable[(byte)(result & 0xFF) ^ array[i]];
-			}
+			int result = 0;
+			foreach (var item in array)
+				if (item)
+					result++;
 
 			return result;
 		}
@@ -116,10 +96,17 @@ namespace NetworkApp
 
 		private static object DeserializeFromStream(MemoryStream stream)
 		{
-			IFormatter formatter = new BinaryFormatter();
-			stream.Seek(0, SeekOrigin.Begin);
+			try
+			{
+				IFormatter formatter = new BinaryFormatter();
+				stream.Seek(0, SeekOrigin.Begin);
 
-			return formatter.Deserialize(stream);
+				return formatter.Deserialize(stream);
+			}
+			catch
+			{
+				return null;
+			}
 		}
 
 		public static byte[] SerializeObject(object obj)
