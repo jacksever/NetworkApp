@@ -8,13 +8,14 @@ namespace NetworkApp
 	{	
 		public Frame() { }
 
-		public Frame(int id, BitArray body, int checkSum, int usefulData, BitArray status)
+		public Frame(int id, BitArray body, uint checkSum, int usefulData, BitArray status, int? repeatIndex)
 		{
 			Id = id;
 			Body = body;
 			CheckSum = checkSum;
 			UsefulData = usefulData;
 			Status = status;
+			RepeatIndex = repeatIndex;
 		}
 
 		public Frame(BitArray status)
@@ -24,8 +25,9 @@ namespace NetworkApp
 
 		public int Id { get; set; }
 		public BitArray Body { get; set; }
-		public int CheckSum { get; set; }
+		public uint CheckSum { get; set; }
 		public int UsefulData { get; set; }
 		public BitArray Status { get; set; }
+		public int? RepeatIndex { get; set; }
 	}
 }

@@ -59,16 +59,18 @@ namespace NetworkApp
 
 					if (checkSum == item.CheckSum)
 					{
-						Utils.AddDataInBuffer(item.Body);
+						if (item.RepeatIndex == null)
+							Utils.AddDataInBuffer(null, item.Body);
+						else
+							Utils.AddDataInBuffer(item.RepeatIndex, item.Body);
+
 						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.RR)));
 					}
 					else
 					{
-						ConsoleHelper.WriteToConsole(TAG, "Ошибка. Завершаю работу.");
-						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.RNR)));
+						ConsoleHelper.WriteToConsole(TAG, "Контрольная сумма не совпадает. Запрашиваю заново пакет.");
+						receipt = new Receipt(id: item.Id, status: new BitArray(BitConverter.GetBytes((int)Type.FRMR)));
 					}
-					break;
-				case (int)Type.REJ:
 					break;
 				default:
 					break;

@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -11,14 +12,87 @@ namespace NetworkApp
 	public static class Utils
 	{
 		public static int FrameLength = 56;
+		private static uint[] CRCTable = new uint[256];
+		private static Random Random = new Random();
+		public static int Index = 0;
+		private static int FrameId = 0;
+
 
 		private static readonly Encoding Encoding = Encoding.UTF8;
 		public static List<BitArray> Result = new List<BitArray>();
 		public static bool[][] Data;
 
-		public static void AddDataInBuffer(BitArray data)
+		public static void BuildCRCTable()
 		{
-			Result.Add(data);
+			uint crc;
+
+			for (uint i = 0; i < 256; i++)
+			{
+				crc = i;
+				for (int j = 0; j < 8; j++)
+					crc = ((crc & 1) == 1) ? (crc >> 1) ^ 0xEDB88320 : crc >> 1;
+
+				CRCTable[i] = crc;
+			}
+		}
+
+		public static uint CheckSum(bool[] data)
+		{
+			uint result = 0xFFFFFFFF;
+			byte[] array = BitArrayToByteArray(new BitArray(data));
+
+			for (int i = 0; i < array.Length; i++)
+			{
+				result >>= 8;
+				result ^= CRCTable[(byte)(result & 0xFF) ^ array[i]];
+			}
+
+			return result;
+		}
+
+		public static BitArray SetNoiseRandom(BitArray body)
+		{
+			if (Random.Next(1, 100) < 10)
+				for (int i = 0; i < body.Length; i++)
+					if (i % Random.Next(1, 5) == 0)
+						body[i] = Random.Next(1, 10) < 5;
+
+			return body;
+		}
+
+		public static void IncrementIndex()
+		{
+			var LockObject = new object();
+			lock (LockObject)
+				Index++;
+		}
+
+		public static void AddDataInBuffer(int? index, BitArray data)
+		{
+			var LockObject = new object();
+			lock (LockObject)
+			{
+				try
+				{
+					if (index == null)
+						Result.Add(data);
+					else
+						Result.Insert((int)index, data);
+				}
+				catch (Exception) { }
+			}
+		}
+
+		public static int GetIndexFrame => FrameId;
+
+		public static int IncrementIndexFrame()
+		{
+			if (FrameId == 7)
+				FrameId = 0;
+			else
+				FrameId++;
+
+			return FrameId;
 		}
 
 		public static byte[] BitArrayToByteArray(BitArray data)
@@ -54,16 +128,6 @@ namespace NetworkApp
 			using var ms = new MemoryStream();
 			bf.Serialize(ms, obj);
 			return ms.ToArray();
-		}
-
-		public static int CheckSum(bool[] array)
-		{
-			int checkSum = 0;
-			for (int fr = 0; fr < array.Length; fr++)
-				if (fr % 5 == 0)
-					checkSum += array[fr] == false ? 0 : 1;
-
-			return checkSum;
 		}
 
 		public static void SerializeMessage(string message)
