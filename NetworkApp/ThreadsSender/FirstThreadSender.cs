@@ -68,7 +68,7 @@ namespace NetworkApp
 						}
 						Utils.IncrementIndex();
 						break;
-					case (int)Type.FRMR:
+					case (int)Type.REJ:
 						frame = GetFrameWithData(index);
 						break;
 					default:
@@ -87,7 +87,7 @@ namespace NetworkApp
 
 				if (randomNumber > 10)
 				{
-					_post(new BitArray(Utils.SerializeObject(frame)));
+					_post(Utils.SetNoiseRandom(new BitArray(Utils.SerializeObject(frame))));
 					Release();
 					WaitOne();
 					SetData();
@@ -102,7 +102,7 @@ namespace NetworkApp
 					}
 					else
 					{
-						_post(new BitArray(Utils.SerializeObject(frame)));
+						_post(Utils.SetNoiseRandom(new BitArray(Utils.SerializeObject(frame))));
 						Release();
 						WaitOne();
 						SetData();

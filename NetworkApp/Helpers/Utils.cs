@@ -13,7 +13,6 @@ namespace NetworkApp
 	{
 		public static int FrameLength = 56;
 		public static int Index = 0;
-		static uint[] CRCTable = new uint[256];
 
 		public static Encoding Encoding = Encoding.UTF8;
 		public static List<BitArray> Result = new List<BitArray>();
@@ -25,30 +24,12 @@ namespace NetworkApp
 		private static string FileExtension;
 		private static bool isFinished = false;
 
-		public static void BuildCRCTable()
+		public static int CheckSum(bool[] array)
 		{
-			uint crc;
-
-			for (uint i = 0; i < 256; i++)
-			{
-				crc = i;
-				for (int j = 0; j < 8; j++)
-					crc = ((crc & 1) == 1) ? (crc >> 1) ^ 0xEDB88320 : crc >> 1;
-
-				CRCTable[i] = crc;
-			}
-		}
-
-		public static uint CheckSum(bool[] data)
-		{
-			uint result = 0xFFFFFFFF;
-			byte[] array = BitArrayToByteArray(new BitArray(data));
-
-			for (int i = 0; i < array.Length; i++)
-			{
-				result >>= 8;
-				result ^= CRCTable[(byte)(result & 0xFF) ^ array[i]];
-			}
+			int result = 0;
+			foreach (var item in array)
+				if (item)
+					result++;
 
 			return result;
 		}
@@ -72,7 +53,7 @@ namespace NetworkApp
 					else
 						Result.Insert((int)index, data);
 				}
-				catch(Exception) { }
+				catch (Exception) { }
 			}
 		}
 
@@ -90,7 +71,7 @@ namespace NetworkApp
 
 		public static BitArray SetNoiseRandom(BitArray body)
 		{
-			if (Random.Next(1, 100) < 10)
+			if (Random.Next(1, 100) > 90)
 				for (int i = 0; i < body.Length; i++)
 					if (i % Random.Next(1, 5) == 0)
 						body[i] = Random.Next(1, 10) < 5;
@@ -119,10 +100,16 @@ namespace NetworkApp
 
 		private static object DeserializeFromStream(MemoryStream stream)
 		{
-			IFormatter formatter = new BinaryFormatter();
-			stream.Seek(0, SeekOrigin.Begin);
-
-			return formatter.Deserialize(stream);
+			try
+			{
+				IFormatter formatter = new BinaryFormatter();
+				stream.Seek(0, SeekOrigin.Begin);
+				return formatter.Deserialize(stream);
+			}
+			catch
+			{
+				return null;
+			}
 		}
 
 		public static byte[] SerializeObject(object obj)
